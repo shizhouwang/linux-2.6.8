@@ -102,6 +102,9 @@ static inline void *phys_to_virt(unsigned long x)
 /*
  * Drivers should NOT use these either.
  */
+/* __pa(x)用于将虚拟地址转换成物理地址
+ * __va(x)用于将物理地址转换成虚拟地址
+ */
 #define __pa(x)			__virt_to_phys((unsigned long)(x))
 #define __va(x)			((void *)__phys_to_virt((unsigned long)(x)))
 

@@ -111,6 +111,10 @@ find_bootmap_pfn(int node, struct meminfo *mi, unsigned int bootmap_pages)
 {
 	unsigned int start_pfn, bank, bootmap_pfn;
 
+	/* 1. _end 表示内核映像的结束虚拟地址
+	 * 2. V_PFN_UP()将对应的虚拟地址转换成物理地址后进行页对齐
+	 * 3. start_fpn 实际表示内核镜像结束位置对应的页帧号
+     */
 	start_pfn   = V_PFN_UP(&_end);
 	bootmap_pfn = 0;
 
