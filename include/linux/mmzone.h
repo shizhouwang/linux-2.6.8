@@ -262,18 +262,23 @@ struct zonelist {
  * per-zone basis.
  */
 struct bootmem_data;
+
+/* pg_data_t 表示一个内存节点（node）
+ * 1. 对于UMA架构系统的设备，只有一个节点；存放在contig_page_data 全局变量中；
+ * 2. 对于NUMA架系统的设备，存在多个节点；全部存放在全局链表pgdat_list中；
+*/
 typedef struct pglist_data {
-	struct zone node_zones[MAX_NR_ZONES];
+	struct zone node_zones[MAX_NR_ZONES];   //节点所包含的zones, ZONE_HIGHMEM, ZONE_NORMAL, ZONE_DMA;
 	struct zonelist node_zonelists[GFP_ZONETYPES];
-	int nr_zones;
-	struct page *node_mem_map;
+	int nr_zones;                     //节点所包含的zone的个数，取值1~3；（不一定所有节点都包含ZONE_DMA类型的zone）；
+	struct page *node_mem_map;        //指向struct page mem_map，表征node所指向的物理pages；
 	struct bootmem_data *bdata;
-	unsigned long node_start_pfn;
+	unsigned long node_start_pfn;     //当前node对应的起始物理帧号（page frame number）；
+	                                  //物理帧号是以一个page为单位计算，实际物理地址 = node_start_pfn << PAGE_SHIFT；
 	unsigned long node_present_pages; /* total number of physical pages */
-	unsigned long node_spanned_pages; /* total size of physical page
-					     range, including holes */
-	int node_id;
-	struct pglist_data *pgdat_next;
+	unsigned long node_spanned_pages; /* total size of physical page range, including holes */
+	int node_id;                      //当前node对应的ID，对于UMA只有一个node，此项为0；
+	struct pglist_data *pgdat_next;   //指向下一个node，对于UMA只有一个node，此项为NULL；
 	wait_queue_head_t       kswapd_wait;
 	struct task_struct *kswapd;
 } pg_data_t;
