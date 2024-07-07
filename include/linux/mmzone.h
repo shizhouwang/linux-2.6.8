@@ -272,7 +272,7 @@ typedef struct pglist_data {
 	struct zonelist node_zonelists[GFP_ZONETYPES];
 	int nr_zones;                     //节点所包含的zone的个数，取值1~3；（不一定所有节点都包含ZONE_DMA类型的zone）；
 	struct page *node_mem_map;        //指向struct page mem_map，表征node所指向的物理pages；
-	struct bootmem_data *bdata;
+	struct bootmem_data *bdata;       //每个bootmem_data_t中携带给每个node分配内存的相关信息
 	unsigned long node_start_pfn;     //当前node对应的起始物理帧号（page frame number）；
 	                                  //物理帧号是以一个page为单位计算，实际物理地址 = node_start_pfn << PAGE_SHIFT；
 	unsigned long node_present_pages; /* total number of physical pages */

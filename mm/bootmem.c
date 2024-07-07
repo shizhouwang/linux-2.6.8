@@ -51,19 +51,20 @@ static unsigned long __init init_bootmem_core (pg_data_t *pgdat,
 	unsigned long mapstart, unsigned long start, unsigned long end)
 {
 	bootmem_data_t *bdata = pgdat->bdata;
-	unsigned long mapsize = ((end - start)+7)/8;
+	unsigned long mapsize = ((end - start)+7)/8;                         //map单位是byte，所以需要按8取整；
 
 	pgdat->pgdat_next = pgdat_list;
 	pgdat_list = pgdat;
 
-	mapsize = (mapsize + (sizeof(long) - 1UL)) & ~(sizeof(long) - 1UL);
-	bdata->node_bootmem_map = phys_to_virt(mapstart << PAGE_SHIFT);
-	bdata->node_boot_start = (start << PAGE_SHIFT);
+	mapsize = (mapsize + (sizeof(long) - 1UL)) & ~(sizeof(long) - 1UL); //保证mapsize的大小是sizeof(long)字节（4）的倍数；
+	bdata->node_bootmem_map = phys_to_virt(mapstart << PAGE_SHIFT);      //node_bootmem_map中存放的是map对应的虚拟地址；
+	bdata->node_boot_start = (start << PAGE_SHIFT);                      //start对应的是pfn，转换成物理地址；
 	bdata->node_low_pfn = end;
 
 	/*
 	 * Initially all pages are reserved - setup_arch() has to
 	 * register free RAM areas explicitly.
+	 * 1. bitmap为1是表示对应的page是保留page
 	 */
 	memset(bdata->node_bootmem_map, 0xff, mapsize);
 
