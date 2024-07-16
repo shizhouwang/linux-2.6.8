@@ -143,13 +143,15 @@ static void __init free_bootmem_core(bootmem_data_t *bdata, unsigned long addr, 
  * alignment has to be a power of 2 value.
  *
  * NOTE:  This function is _not_ reentrant.
+ * 1. 所有bootmem分配器相关内存分配，底层调用的都是此函数；
+ * 2. 入参goal表示希望分配内存的起始物理地址（会从这个地址开始查找）；
  */
 static void * __init
 __alloc_bootmem_core(struct bootmem_data *bdata, unsigned long size,
 		unsigned long align, unsigned long goal)
 {
 	unsigned long offset, remaining_size, areasize, preferred;
-	unsigned long i, start = 0, incr, eidx;
+	unsigned long i, start = 0, incr, eidx; 
 	void *ret;
 
 	if(!size) {
@@ -158,8 +160,10 @@ __alloc_bootmem_core(struct bootmem_data *bdata, unsigned long size,
 	}
 	BUG_ON(align & (align-1));
 
+    //eidx表示在bootmem中页框（page frame）的最大索引号；
 	eidx = bdata->node_low_pfn - (bdata->node_boot_start >> PAGE_SHIFT);
 	offset = 0;
+	//align表示按多少字节对齐：
 	if (align &&
 	    (bdata->node_boot_start & (align - 1UL)) != 0)
 		offset = (align - (bdata->node_boot_start & (align - 1UL)));
@@ -168,6 +172,9 @@ __alloc_bootmem_core(struct bootmem_data *bdata, unsigned long size,
 	/*
 	 * We try to allocate bootmem pages above 'goal'
 	 * first, then we try to allocate lower pages.
+	 * 如果入参中指定了goal，并且goal对应的物理地址在bootmem对应的内存区间范围内；
+	 * 则将preferred设置为相对于内存起始地址的偏移量；
+	 * 如果最近一次分配成功的地址偏移量大于preferred，则修改preferred为这个地址偏移量
 	 */
 	if (goal && (goal >= bdata->node_boot_start) && 
 	    ((goal >> PAGE_SHIFT) < bdata->node_low_pfn)) {
@@ -177,19 +184,25 @@ __alloc_bootmem_core(struct bootmem_data *bdata, unsigned long size,
 			preferred = bdata->last_success;
 	} else
 		preferred = 0;
-
+    //将preferred对应的地址按align字节对齐
 	preferred = ((preferred + align - 1) & ~(align - 1)) >> PAGE_SHIFT;
 	preferred += offset;
 	areasize = (size+PAGE_SIZE-1)/PAGE_SIZE;
-	incr = align >> PAGE_SHIFT ? : 1;
+	//incr表示增量遍历查询的步数；
+	//如果align大于一个page的大小，则遍历bootmem的时候按align换算的大小进行计算
+	incr = align >> PAGE_SHIFT ? : 1;   
 
 restart_scan:
 	for (i = preferred; i < eidx; i += incr) {
 		unsigned long j;
+		//find_next_zero_bit()函数作用：
+		//查询*addr中，从第offset位开始，第一个不为0的位的位数(最低位从0开始);
+		//offset最小值为0，最大值为sizeof(unsigned long)*8 - 1
 		i = find_next_zero_bit(bdata->node_bootmem_map, eidx, i);
 		i = ALIGN(i, incr);
 		if (test_bit(i, bdata->node_bootmem_map))
 			continue;
+	    //从第一个为空的bit位i开始查找，基于需要申请的空间大小，逐个判断后面的bit位是否都不为0（表示可用）；
 		for (j = i + 1; j < i + areasize; ++j) {
 			if (j >= eidx)
 				goto fail_block;
