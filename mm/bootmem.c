@@ -229,19 +229,25 @@ found:
 	 * Is the next page of the previous allocation-end the start
 	 * of this allocation's buffer? If yes then we can 'merge'
 	 * the previous partial page with this allocation.
+	 * 如果align小于PAGE_SIZE并且上一次分配的页框就是这次分配页框的上一个页框并且上一次分配的页框还没用完，则合并前面分配的未用的页框。
 	 */
 	if (align < PAGE_SIZE &&
-	    bdata->last_offset && bdata->last_pos+1 == start) {
+	    bdata->last_offset && bdata->last_pos+1 == start) {//上一次分配的页帧号是当前分配的页帧号的前一个；
 		offset = (bdata->last_offset+align-1) & ~(align-1);
 		BUG_ON(offset > PAGE_SIZE);
 		remaining_size = PAGE_SIZE-offset;
+		//1. 如果前一个页框剩下未用的大小remaining_size大于这次需要请求分配的空间大小size
+		//则直接从上一个页框未使用的空间分配给这次需要的size空间；
 		if (size < remaining_size) {
 			areasize = 0;
 			/* last_pos unchanged */
 			bdata->last_offset = offset+size;
 			ret = phys_to_virt(bdata->last_pos*PAGE_SIZE + offset +
 						bdata->node_boot_start);
-		} else {
+		} 
+        //2. 如果前一个页框剩下未用的大小remaining_size不大于这次需要请求分配的空间大小size
+        //则将请求的一部分分在前一个页框中，另一部分从新计算需要分配的页框数。
+		else {
 			remaining_size = size - remaining_size;
 			areasize = (remaining_size+PAGE_SIZE-1)/PAGE_SIZE;
 			ret = phys_to_virt(bdata->last_pos*PAGE_SIZE + offset +
