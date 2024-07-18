@@ -25,6 +25,13 @@
 
 /*
  * Page offset: 32MB
+ * PHYS_OFFSET说明：主要用来表示物理地址空间的起始地址
+ * 1. 在内核中，由于物理地址与虚拟地址空间可能不同，因此需要一种机制来在需要时进行地址转换。
+ * 2. PHYS_OFFSET 提供了物理地址和内核虚拟地址之间的偏移量，使得内核可以准确地访问系统的物理内存。
+
+ * PAGE_OFFSET说明：主要用于表示虚拟地址空间的起始地址
+ * 1. PAGE_OFFSET 定义了内核虚拟地址空间的起始地址。在内核中，所有的内核虚拟地址都相对于 PAGE_OFFSET 进行偏移。
+ * 2. 类似于 PHYS_OFFSET，PAGE_OFFSET 提供了一个基准点，使得内核可以将虚拟地址转换为物理地址或者反过来。
  */
 #define PAGE_OFFSET     (0x02000000UL)
 #define PHYS_OFFSET     (0x02000000UL)

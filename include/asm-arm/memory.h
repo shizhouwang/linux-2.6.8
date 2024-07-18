@@ -80,6 +80,7 @@
  * This is the PFN of the first RAM page in the kernel
  * direct-mapped view.  We assume this is the first page
  * of RAM in the mem_map as well.
+ * PHYS_PFN_OFFSET表示第一个物理页（PFN 0 ）对应的偏移地址
  */
 #define PHYS_PFN_OFFSET	(PHYS_OFFSET >> PAGE_SHIFT)
 
@@ -134,10 +135,17 @@ static inline void *phys_to_virt(unsigned long x)
  */
 #ifndef CONFIG_DISCONTIGMEM
 
+/*
+ * mem_map是struct page全局数组起始物理地址；
+ * page是实际page的地址；
+ * PHYS_PFN_OFFSET是第一个物理页（PFN0）对应的偏移值；
+*/
 #define page_to_pfn(page)	(((page) - mem_map) + PHYS_PFN_OFFSET)
 #define pfn_to_page(pfn)	((mem_map + (pfn)) - PHYS_PFN_OFFSET)
 #define pfn_valid(pfn)		((pfn) >= PHYS_PFN_OFFSET && (pfn) < (PHYS_PFN_OFFSET + max_mapnr))
 
+//将虚拟地址转换成物理地址后，根据物理地址计算对应的PFN
+//PFN
 #define virt_to_page(kaddr)	(pfn_to_page(__pa(kaddr) >> PAGE_SHIFT))
 #define virt_addr_valid(kaddr)	((unsigned long)(kaddr) >= PAGE_OFFSET && (unsigned long)(kaddr) < (unsigned long)high_memory)
 

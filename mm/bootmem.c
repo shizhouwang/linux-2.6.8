@@ -272,6 +272,9 @@ found:
 	return ret;
 }
 
+/*
+ * 1. 所有bootmem分配器相关内存释放，底层调用的都是此函数；
+ */
 static unsigned long __init free_all_bootmem_core(pg_data_t *pgdat)
 {
 	struct page *page;

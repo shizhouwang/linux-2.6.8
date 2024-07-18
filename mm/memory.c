@@ -59,6 +59,10 @@
 #ifndef CONFIG_DISCONTIGMEM
 /* use the per-pgdat data instead for discontigmem - mbligh */
 unsigned long max_mapnr;
+/*
+* 1. struct page *mem_map 是一个数组，每个元素代表系统中一个物理页面（通常是4KB大小）。
+* 2. 在 Linux 内核中，内存管理器使用 mem_map 数组来跟踪和管理系统中的所有物理页面。通过这个数组，内核能够快速查找、分配和释放物理页面，确保内存的有效利用和高效管理。
+*/
 struct page *mem_map;
 
 EXPORT_SYMBOL(max_mapnr);
