@@ -288,21 +288,22 @@ static unsigned long __init free_all_bootmem_core(pg_data_t *pgdat)
 	count = 0;
 	/* first extant page of the node */
 	page = virt_to_page(phys_to_virt(bdata->node_boot_start));
+	//idx表示可用内存按Page Frame计算的长度；
 	idx = bdata->node_low_pfn - (bdata->node_boot_start >> PAGE_SHIFT);
 	map = bdata->node_bootmem_map;
 	for (i = 0; i < idx; ) {
-		unsigned long v = ~map[i / BITS_PER_LONG];
-		if (v) {
-			unsigned long m;
-			for (m = 1; m && i < idx; m<<=1, page++, i++) {
-				if (v & m) {
+		unsigned long v = ~map[i / BITS_PER_LONG];  //根据全部可用的PFN长度，遍历bitmap；
+		if (v) {                                    //如果找到对应PFN对应的bitmap单元（一个单元是unsigned long类型）
+			unsigned long m;                        //定义m表示其中一个bit，用于遍历一个bitmap单元
+			for (m = 1; m && (i < idx); m<<=1, page++, i++) {
+				if (v & m) {                        //如果对应的bit位置为1，表示
 					count++;
-					ClearPageReserved(page);
-					set_page_count(page, 1);
-					__free_page(page);
+					ClearPageReserved(page);        //将struct page中flags字段中PG_reserved清0，表示可用
+					set_page_count(page, 1);        //将struct page中_count字段减1，表示减少一个引用计数
+					__free_page(page);              //尝试释放对应的page（此处不一定真实释放，因为可能有多个引用计数）
 				}
 			}
-		} else {
+		} else {                                    //如果没有找到对应PFN对应bitmap单元，跳过一个bitmap单元长度继续遍历
 			i+=BITS_PER_LONG;
 			page += BITS_PER_LONG;
 		}
@@ -315,6 +316,7 @@ static unsigned long __init free_all_bootmem_core(pg_data_t *pgdat)
 	 */
 	page = virt_to_page(bdata->node_bootmem_map);
 	count = 0;
+	//TODO：为什么要/8 ??
 	for (i = 0; i < ((bdata->node_low_pfn-(bdata->node_boot_start >> PAGE_SHIFT))/8 + PAGE_SIZE-1)/PAGE_SIZE; i++,page++) {
 		count++;
 		ClearPageReserved(page);
