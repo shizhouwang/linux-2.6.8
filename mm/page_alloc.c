@@ -536,6 +536,9 @@ void fastcall free_cold_page(struct page *page)
  * Really, prep_compound_page() should be called from __rmqueue_bulk().  But
  * we cheat by calling it from here, in the order > 0 path.  Saves a branch
  * or two.
+ * 在Linux内核中，buffered_rmqueue函数通常用于管理和操作文件系统中的缓冲区页（buffered pages）。
+ * 具体来说，它的作用是从缓冲区中移除一个或多个页面（page），并将这些页面标记为不再使用或释放给其他用途。
+ * 在文件系统中，数据通常被缓存在内存中，以提高对磁盘的访问速度。这些被缓存的数据页面在内核中被称为缓冲区页（buffered pages）。当文件系统需要释放或者重新分配这些页时，就会调用buffered_rmqueue函数。
  */
 
 static struct page *
@@ -593,6 +596,11 @@ buffered_rmqueue(struct zone *zone, int order, int gfp_flags)
  * which really do need memory from those zones.  It means that on a decent
  * sized machine, GFP_HIGHMEM and GFP_KERNEL requests basically leave the DMA
  * zone untouched.
+ * 1. 所有zoned buddy allocator分配page的函数API，底层最终都调用此函数分配page；
+ * 2. Get Free Page (GFP) _mask表示获取page的标志位；
+ * 2.1 这些标志位决定了伙伴分配器和kswapd在分配和释放物理页时的行为表现；
+ * 2.2 gfp_t gfp_mask: 用于指定内存分配的标志（GFP flags），这些标志决定了分配的方式和行为，例如内存分配策略、是否可以睡眠等。
+ * 3. unsigned int order: 表示请求的页面数量的对数（以2为底的指数），即请求的页面数是2的 order 次方个页面。例如，如果 order 是2，则请求的是4个页面。
  */
 struct page * fastcall
 __alloc_pages(unsigned int gfp_mask, unsigned int order,
@@ -602,8 +610,8 @@ __alloc_pages(unsigned int gfp_mask, unsigned int order,
 	unsigned long min;
 	struct zone **zones;
 	struct page *page;
-	struct reclaim_state reclaim_state;
-	struct task_struct *p = current;
+	struct reclaim_state reclaim_state; //需要回收的内存状态；
+	struct task_struct *p = current;    //p指向当前CPU上正在执行的进程的任务结构体指针;
 	int i;
 	int alloc_type;
 	int do_retry;
@@ -614,12 +622,13 @@ __alloc_pages(unsigned int gfp_mask, unsigned int order,
 	if (zones[0] == NULL)     /* no zones in the zonelist */
 		return NULL;
 
-	alloc_type = zone_idx(zones[0]);
+	alloc_type = zone_idx(zones[0]);    //获取zonelist中第一个zone对应的node节点包含的zone数量
 
 	/* Go through the zonelist once, looking for a zone with enough free */
 	for (i = 0; zones[i] != NULL; i++) {
 		struct zone *z = zones[i];
 
+        //固定算法，用于计算指定类型zone中预存的可用的最小page数量；
 		min = (1<<order) + z->protection[alloc_type];
 
 		/*
@@ -627,6 +636,9 @@ __alloc_pages(unsigned int gfp_mask, unsigned int order,
 		 * deeper into reserves.
 		 */
 		if (rt_task(p))
+		    //pages_low一般默认是pages_min的两倍，此处相当于找到pages_min的阈值；
+		    //当可用内存低于阈值就会触发kswapd用于回收内存；
+		    //min减去阈值，表示当前zone预分配的page中，除去pages_min以外的可用的pages
 			min -= z->pages_low >> 1;
 
 		if (z->free_pages >= min ||

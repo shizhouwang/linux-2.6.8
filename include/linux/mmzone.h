@@ -32,9 +32,14 @@
 #define MAX_SYS_HASH_TABLE_ORDER 14
 #endif
 
+// struct free_area用来维护相同长度的空闲页块；
+//1. free_list是空闲页块的链表；
+//2. map是个bitmpa，其中每一位表示表示一对buddy的状态；
+//2.1 每次分配或释放一个伙伴时，表示这对伙伴的位被切换，如果这对页面都空闲或都满，则位为0，如果只有一个伙伴在使用，则位为1；
+//2.2 通过宏定义：MARK_USED()来修改对应bit位；
 struct free_area {
-	struct list_head	free_list;
-	unsigned long		*map;
+	struct list_head	free_list;  
+	unsigned long		*map;       
 };
 
 struct pglist_data;
@@ -124,7 +129,18 @@ struct zone {
 	 * Commonly accessed fields:
 	 */
 	spinlock_t		lock;
-	unsigned long		free_pages;
+	unsigned long		free_pages; //当前zone所有可用的page数量；
+	/*
+	* 每个zone都有三个水印（watermark），分别是pages_low, pages_min和pages_high，用于跟踪该区域所承受内存分配的压力。
+	* 1. pages_low 表示系统中处于低内存状态的页框（页面）数量阈值。
+	* 1.1 当达到pages_low的空闲页面数时，伙伴分配器会唤醒kswapd，开始释放页面。
+	* 1.2 pages_low默认是page_min的两倍；
+	* 2. pages_min 表示系统中可以接受的最小空闲页框（页面）数量。
+	* 2.1 当到达pages_min时，分配器将以同步方式执行kswapd工作，有时称为直接回收路径。
+	* 3. pages_high 表示系统中可以接受的高内存状态的页框（页面）数量阈值。
+	* 3.1 当到达page_hign时，kswapd将返回休眠状态。
+	* 3.2 page_hign默认是page_min的三倍；
+	*/
 	unsigned long		pages_min, pages_low, pages_high;
 	/*
 	 * protection[] is a pre-calculated number of extra pages that must be
@@ -175,6 +191,8 @@ struct zone {
 
 	/*
 	 * free areas of different sizes
+	 * 1. free_area结构体数组存放伙伴分配器不同长度（2^n）的空闲页块；
+	 * 2. struct free_area用来维护相同长度的空闲页块；
 	 */
 	struct free_area	free_area[MAX_ORDER];
 
@@ -213,8 +231,8 @@ struct zone {
 	/*
 	 * Discontig memory support fields.
 	 */
-	struct pglist_data	*zone_pgdat;
-	struct page		*zone_mem_map;
+	struct pglist_data	*zone_pgdat;    //指向当前zone所属的父node类；
+	struct page		*zone_mem_map;      //指向当前zone在全局mem_map中所指向的第一个page；
 	/* zone_start_pfn == zone_start_paddr >> PAGE_SHIFT */
 	unsigned long		zone_start_pfn;
 
@@ -244,6 +262,7 @@ struct zone {
  * modify it apart from boot-up, and only a few indices are used,
  * so despite the zonelist table being relatively big, the cache
  * footprint of this construct is very small.
+ * 1. zonelist描述了一个进程或者任务可用的内存区域列表；
  */
 struct zonelist {
 	struct zone *zones[MAX_NUMNODES * MAX_NR_ZONES + 1]; // NULL delimited
@@ -387,6 +406,11 @@ int lower_zone_protection_sysctl_handler(struct ctl_table *, int, struct file *,
 /* Returns the number of the current Node. */
 #define numa_node_id()		(cpu_to_node(smp_processor_id()))
 
+/*
+* CONFIG_DISCONTIGMEM表示内核配置选项，用于支持非连续物理内存（discontiguous physical memory）的管理。
+* 1. 在NUMA系统架构中，物理内存并非一块连续的地址空间，而是由多个不相邻的物理内存区域组成。
+* 2. 如果没有使能，表示UMA系统架构；
+*/
 #ifndef CONFIG_DISCONTIGMEM
 
 extern struct pglist_data contig_page_data;

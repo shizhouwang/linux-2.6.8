@@ -68,9 +68,11 @@ typedef struct {
 /*
  * current->reclaim_state points to one of these when a task is running
  * memory reclaim
+ * 1. 用于内存回收（memory reclaim）过程的关键结构体之一。
+ * 2. 它在内核中的作用主要是帮助内核管理和跟踪需要回收的内存页面，以及优化内存回收的策略。
  */
 struct reclaim_state {
-	unsigned long reclaimed_slab;
+	unsigned long reclaimed_slab;    //表示通过内存回收（reclaim）释放的用于内核SLAB分配器（SLAB allocator）的内存量。
 };
 
 #ifdef __KERNEL__

@@ -300,6 +300,11 @@ struct signal_struct {
 
 #define MAX_PRIO		(MAX_RT_PRIO + 40)
 
+/*
+* rt_task(p) 宏的作用是通过比较进程 p 的优先级（prio）是否小于最大实时优先级（MAX_RT_PRIO），来判断进程 p 是否为实时任务。
+* 1. 实时任务优先级区间范围是：0 .. MAX_RT_PRIO-1；
+* 2. SCHED_NORMAL类型任务优先级区间范围是：MAX_RT_PRIO .. MAX_PRIO-1
+*/
 #define rt_task(p)		((p)->prio < MAX_RT_PRIO)
 
 /*
@@ -386,7 +391,12 @@ int set_current_groups(struct group_info *group_info);
 
 struct audit_context;		/* See audit.c */
 struct mempolicy;
-
+/*
+* 用于表示每个进程或线程的状态和信息。
+* 1. 进程描述：struct task_struct用于描述和存储每个进程（task）的所有信息，包括进程的状态、调度信息、内存管理信息、文件系统相关信息等。
+* 2. 任务调度和管理：内核使用struct task_struct来管理进程的调度，包括进程的优先级、CPU时间片等调度相关信息。
+* 3. 上下文切换：当进程切换时，struct task_struct中存储的上下文信息（如寄存器状态、堆栈指针等）被用来保存当前进程的执行状态，以便稍后能够恢复到该状态。
+*/
 struct task_struct {
 	volatile long state;	/* -1 unrunnable, 0 runnable, >0 stopped */
 	struct thread_info *thread_info;

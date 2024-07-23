@@ -48,6 +48,13 @@ struct completion;
 #ifdef CONFIG_DEBUG_SPINLOCK_SLEEP
 void __might_sleep(char *file, int line);
 #define might_sleep() __might_sleep(__FILE__, __LINE__)
+/*
+* 1. 作用：用于标记在某些条件下可能会发生睡眠（进入睡眠状态）的代码路径。
+* 1.1 具体来说，它的作用是向编译器和静态分析工具指示，在特定条件成立时，代码可能会执行阻塞操作或导致进程睡眠，因此需要特别注意。
+* 2. 使用场景：在 Linux 内核的开发中，有些操作可能会导致当前进程或线程进入睡眠状态，例如等待锁、访问文件系统、等待设备完成等待。
+* 这些操作都是会阻塞当前进程的，并可能导致系统的死锁或者性能下降。
+* 因此，在这些操作之前，通过 might_sleep_if() 宏来标记可能发生睡眠的条件，可以帮助开发者审查和分析这些代码路径是否安全，是否需要额外的同步措施或者优化。
+*/
 #define might_sleep_if(cond) do { if (unlikely(cond)) might_sleep(); } while (0)
 #else
 #define might_sleep() do {} while(0)
